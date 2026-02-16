@@ -1,4 +1,4 @@
-class MixadorProfissional {
+8class MixadorProfissional {
     constructor() {
         this.canais = new Map();
         this.masterBus = null;
@@ -156,3 +156,8 @@ class MixadorProfissional {
         return recording;
     }
 }
+
+// Tornar classe global
+window.MixadorProfissional = MixadorProfissional;
+
+console.log('📦 mixador.js carregado, classe MixadorProfissional definida');
