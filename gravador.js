@@ -177,4 +177,6 @@ class GravadorVoz {
     }
 }
 
+window.GravadorVoz = GravadorVoz;
+
 console.log('📦 gravador.js carregado, classe GravadorVoz definida');
