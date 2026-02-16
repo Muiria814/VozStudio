@@ -203,3 +203,5 @@ class AnalisadorVoz {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = AnalisadorVoz;
 }
+
+window.AnalisadorVoz = AnalisadorVoz;
