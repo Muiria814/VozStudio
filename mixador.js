@@ -159,7 +159,9 @@ class MixadorProfissional {
 
 class MixadorProfissional {
     constructor() {
-        console.log("🎚️ Mixador criado");
+        this.canais = new Map();
+        this.masterBus = null;
+        this.efeitos = {};
     }
 
     configurarMix() {
