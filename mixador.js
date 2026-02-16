@@ -157,7 +157,16 @@
     }
 }
 
-// Tornar classe global
+class MixadorProfissional {
+    constructor() {
+        console.log("🎚️ Mixador criado");
+    }
+
+    configurarMix() {
+        console.log("🎚️ Mix configurado");
+    }
+}
+
 window.MixadorProfissional = MixadorProfissional;
 
-console.log('📦 mixador.js carregado, classe MixadorProfissional definida');
+console.log("📦 mixador.js carregado");
