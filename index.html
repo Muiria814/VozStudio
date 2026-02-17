@@ -1,55 +1,129 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VozStudio</title>
+    <title>VozStudio - Transforma a tua voz em música</title>
+    
+    <!-- CSS -->
     <link rel="stylesheet" href="estilo.css">
     <link rel="manifest" href="manifest.json">
-    <style>
-        body { font-family: Arial; padding: 20px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; text-align: center; }
-        button { padding: 15px 30px; margin: 10px; font-size: 18px; border: none; border-radius: 10px; cursor: pointer; }
-        .btn-gravar { background: #ff4444; color: white; }
-        .btn-parar { background: #666; color: white; }
-        .btn-gerar { background: #ffd700; color: black; padding: 20px 40px; font-size: 24px; }
-        button:disabled { opacity: 0.5; }
-        #waveform { width: 100%; height: 100px; background: rgba(255,255,255,0.1); margin: 20px 0; border-radius: 10px; }
-        .erro { color: #ffaaaa; background: rgba(255,0,0,0.2); padding: 10px; border-radius: 10px; }
-        .sucesso { color: #aaffaa; background: rgba(0,255,0,0.2); padding: 10px; border-radius: 10px; }
-    </style>
+    
+    <!-- Cores do tema para PWA -->
+    <meta name="theme-color" content="#764ba2">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
-    <h1>🎤 VozStudio</h1>
-    <p>Grava a tua voz e cria música automática</p>
+    <div class="container">
+        <header>
+            <h1>🎤 Voz<span>Studio</span></h1>
+            <p>Grava a tua voz e nós criamos a música profissional</p>
+        </header>
 
-    <canvas id="waveform" width="300" height="100"></canvas>
-    
-    <div>
-        <button id="btnGravar" class="btn-gravar">🎙️ Gravar Voz</button>
-        <button id="btnParar" class="btn-parar" disabled>⏹️ Parar</button>
+        <main>
+            <!-- Área de gravação -->
+            <div class="gravador-card">
+                <div class="visualizador">
+                    <canvas id="waveform" width="300" height="100"></canvas>
+                </div>
+                
+                <div class="controles-gravacao">
+                    <button id="btnGravar" class="btn-gravar">
+                        <span>🎙️</span> Gravar Voz
+                    </button>
+                    <button id="btnParar" class="btn-parar" disabled>
+                        ⏹️ Parar
+                    </button>
+                </div>
+
+                <div id="infoVoz" class="info-voz">
+                    <p>Aguardando gravação...</p>
+                </div>
+            </div>
+
+            <!-- Personaliza o teu som -->
+            <div class="config-card">
+                <h3>🎛️ Personaliza o teu som</h3>
+                
+                <div class="config-grupo">
+                    <label>Estilo musical:</label>
+                    <select id="estiloMusical">
+                        <option value="pop">Pop (comercial)</option>
+                        <option value="rap">Rap/Trap</option>
+                        <option value="kizomba">Kizomba</option>
+                        <option value="semba">Semba</option>
+                        <option value="afrobeat">Afrobeat</option>
+                        <option value="gospel">Gospel</option>
+                        <option value="acustico">Acústico</option>
+                    </select>
+                </div>
+
+                <div class="config-grupo">
+                    <label>Andamento (BPM):</label>
+                    <input type="range" id="bpm" min="60" max="180" value="100">
+                    <span id="bpmValor">100 BPM</span>
+                </div>
+
+                <div class="config-grupo">
+                    <label>Tom principal:</label>
+                    <select id="tom">
+                        <option value="C">Dó (C) - Alegre</option>
+                        <option value="D">Ré (D) - Dançante</option>
+                        <option value="E">Mi (E) - Energético</option>
+                        <option value="F">Fá (F) - Suave</option>
+                        <option value="G">Sol (G) - Vibrante</option>
+                        <option value="A">Lá (A) - Calmo</option>
+                        <option value="B">Si (B) - Intenso</option>
+                    </select>
+                </div>
+
+                <div class="config-grupo">
+                    <label>Instrumentos:</label>
+                    <div class="checkbox-grupo">
+                        <label><input type="checkbox" id="instPiano" checked> 🎹 Piano</label>
+                        <label><input type="checkbox" id="instBaixo" checked> 🎸 Baixo</label>
+                        <label><input type="checkbox" id="instBateria" checked> 🥁 Bateria</label>
+                        <label><input type="checkbox" id="instGuitarra"> 🎸 Guitarra</label>
+                        <label><input type="checkbox" id="instCordas"> 🎻 Cordas</label>
+                        <label><input type="checkbox" id="instMetal"> 🎺 Metais</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botão de geração -->
+            <div class="acao-principal">
+                <button id="btnGerar" class="btn-gerar">
+                    ✨ Criar Música Completa ✨
+                </button>
+            </div>
+
+            <!-- Player e resultado -->
+            <div class="resultado-card" id="resultado" style="display: none;">
+                <h3>🎵 Tua música está pronta!</h3>
+                
+                <audio id="player" controls></audio>
+                
+                <div class="botoes-exportar">
+                    <button id="btnMP3">⬇️ Download MP3</button>
+                    <button id="btnWAV">⬇️ Download WAV (qualidade)</button>
+                    <button id="btnCompartilhar">📱 Compartilhar</button>
+                </div>
+
+                <div class="info-profissional">
+                    <p>✅ Masterização profissional aplicada</p>
+                    <p>✅ Pronto para Spotify/YouTube</p>
+                    <p>✅ Podes gravar mais takes</p>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>🎯 Tens uma voz incrível? Nós fazemos o resto!</p>
+        </footer>
     </div>
 
-    <div id="infoVoz">
-        <p>Aguardando gravação...</p>
-    </div>
-
-    <h3>🎛️ Configurações</h3>
-    <select id="estiloMusical">
-        <option value="pop">Pop</option>
-        <option value="rap">Rap</option>
-        <option value="kizomba">Kizomba</option>
-    </select>
-    
-    <p>BPM: <input type="range" id="bpm" min="60" max="180" value="100"> <span id="bpmValor">100</span></p>
-    
-    <button id="btnGerar" class="btn-gerar">✨ Criar Música ✨</button>
-    
-    <div id="resultado" style="display:none; margin-top:20px;">
-        <h3>🎵 Tua Música</h3>
-        <audio id="player" controls></audio>
-    </div>
-
-    <!-- CARREGAR SCRIPTS (ORDEM CORRETA) -->
+    <!-- SCRIPTS NA ORDEM CORRETA -->
     <script src="https://cdn.jsdelivr.net/npm/tone"></script>
     <script src="gravador.js"></script>
     <script src="analisador.js"></script>
@@ -59,31 +133,30 @@
 
     <!-- INICIALIZAÇÃO COM VERIFICAÇÃO -->
     <script>
-        // Aguardar tudo carregar
         window.addEventListener('load', function() {
             console.log('📱 Página carregada');
             
-            // Verificar classes
+            // Verificar se todas as classes existem
             const classes = {
-                'GravadorVoz': !!window.GravadorVoz,
-                'AnalisadorVoz': !!window.AnalisadorVoz,
-                'GeradorMusical': !!window.GeradorMusical,
-                'MixadorProfissional': !!window.MixadorProfissional,
-                'VozStudio': !!window.VozStudio
+                'GravadorVoz': typeof GravadorVoz !== 'undefined',
+                'AnalisadorVoz': typeof AnalisadorVoz !== 'undefined',
+                'GeradorMusical': typeof GeradorMusical !== 'undefined',
+                'MixadorProfissional': typeof MixadorProfissional !== 'undefined',
+                'VozStudio': typeof VozStudio !== 'undefined'
             };
             
             console.log('Classes verificadas:', classes);
             
-            // Verificar se todas existem
-            const todasExistem = Object.values(classes).every(v => v === true);
+            // Verificar se alguma está faltando
+            const faltando = Object.entries(classes)
+                .filter(([_, existe]) => !existe)
+                .map(([nome]) => nome);
             
-            if (!todasExistem) {
-                const faltando = Object.entries(classes)
-                    .filter(([_, existe]) => !existe)
-                    .map(([nome]) => nome);
-                    
+            if (faltando.length > 0) {
                 document.getElementById('infoVoz').innerHTML = 
-                    `<p class="erro">❌ Erro: ${faltando.join(', ')} não definido</p>`;
+                    `<p style="color: red; background: rgba(255,0,0,0.2); padding: 10px; border-radius: 10px;">
+                        ❌ Erro: ${faltando.join(', ')} não definido
+                    </p>`;
                 return;
             }
             
@@ -92,10 +165,12 @@
                 window.app = new VozStudio();
                 window.app.inicializar();
                 document.getElementById('infoVoz').innerHTML = 
-                    '<p class="sucesso">✅ App pronta! Clique em Gravar Voz</p>';
+                    '<p style="color: green; background: rgba(0,255,0,0.2); padding: 10px; border-radius: 10px;">✅ App pronta! Clique em Gravar Voz</p>';
             } catch (erro) {
                 document.getElementById('infoVoz').innerHTML = 
-                    `<p class="erro">❌ Erro: ${erro.message}</p>`;
+                    `<p style="color: red; background: rgba(255,0,0,0.2); padding: 10px; border-radius: 10px;">
+                        ❌ Erro: ${erro.message}
+                    </p>`;
             }
         });
     </script>
