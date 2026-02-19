@@ -13,6 +13,13 @@ class VozStudio {
         this.analiseVozAtual = null;
         this.musicaGerada = null;
         this.audioUrl = null;
+        
+        // Controlo de áudio
+        this.audioContext = null;
+        this.currentOscillator = null;
+        this.currentGain = null;
+        this.currentPart = null;
+        this.isPlaying = false;
     }
 
     inicializar() {
@@ -43,6 +50,7 @@ class VozStudio {
         const btnMP3 = document.getElementById('btnMP3');
         const btnWAV = document.getElementById('btnWAV');
         const btnCompartilhar = document.getElementById('btnCompartilhar');
+        const player = document.getElementById('player');
 
         if (btnGravar) {
             btnGravar.addEventListener('click', () => this.iniciarGravacao());
@@ -71,6 +79,24 @@ class VozStudio {
             btnCompartilhar.addEventListener('click', () => this.compartilhar());
         }
 
+        // Controlo do player
+        if (player) {
+            player.addEventListener('play', () => {
+                console.log('▶️ Player iniciado');
+                this.isPlaying = true;
+            });
+            
+            player.addEventListener('pause', () => {
+                console.log('⏸️ Player pausado');
+                this.isPlaying = false;
+            });
+            
+            player.addEventListener('ended', () => {
+                console.log('⏹️ Player terminado');
+                this.isPlaying = false;
+            });
+        }
+
         // Slider BPM
         const bpmSlider = document.getElementById('bpm');
         const bpmValor = document.getElementById('bpmValor');
@@ -82,8 +108,61 @@ class VozStudio {
         }
     }
 
+    // ===========================================
+    // NOVO: Parar todos os sons
+    // ===========================================
+    pararTodosOsSons() {
+        console.log('🔇 Parando todos os sons...');
+        
+        // Parar Tone.Transport
+        if (Tone && Tone.Transport) {
+            Tone.Transport.stop();
+            Tone.Transport.cancel();
+        }
+        
+        // Parar osciladores manuais
+        if (this.currentOscillator) {
+            try {
+                this.currentOscillator.stop();
+                this.currentOscillator.disconnect();
+            } catch (e) {}
+            this.currentOscillator = null;
+        }
+        
+        if (this.currentGain) {
+            try {
+                this.currentGain.disconnect();
+            } catch (e) {}
+            this.currentGain = null;
+        }
+        
+        // Parar partes do Tone.js
+        if (this.currentPart) {
+            try {
+                this.currentPart.stop();
+                this.currentPart.dispose();
+            } catch (e) {}
+            this.currentPart = null;
+        }
+        
+        // Fechar contexto de áudio se existir
+        if (this.audioContext && this.audioContext.state !== 'closed') {
+            try {
+                this.audioContext.close();
+            } catch (e) {}
+        }
+        
+        // Criar novo contexto
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        console.log('✅ Todos os sons parados');
+    }
+
     async iniciarGravacao() {
         console.log('🎤 Iniciando gravação...');
+        
+        // Parar qualquer som antes de gravar
+        this.pararTodosOsSons();
 
         try {
             // Pedir permissão e iniciar gravação
@@ -118,6 +197,11 @@ class VozStudio {
 
     async gerarMusica() {
         console.log('✨ Gerando música...');
+        
+        // ===========================================
+        // CRÍTICO: Parar todos os sons anteriores
+        // ===========================================
+        this.pararTodosOsSons();
 
         // Verificar se temos análise da voz
         if (!this.analiseVozAtual) {
@@ -149,14 +233,22 @@ class VozStudio {
             // Mostrar resultado
             document.getElementById('resultado').style.display = 'block';
             
-            // GERAR TOM DE TESTE
-            const audioUrl = await generateTestTone(3, 440);
+            // GERAR TOM DE TESTE (limitado a 5 segundos)
+            const duration = Math.min(this.analiseVozAtual?.duracao || 5, 10);
+            const audioUrl = await generateTestTone(duration, 440);
             const player = document.getElementById('player');
+            
+            // Remover URL anterior
+            if (this.audioUrl) {
+                URL.revokeObjectURL(this.audioUrl);
+            }
+            
+            this.audioUrl = audioUrl;
             player.src = audioUrl;
             player.controls = true;
             player.load();
             
-            alert('✅ Música gerada com sucesso! (Tom de teste)');
+            alert(`✅ Música gerada com sucesso! (${duration}s)`);
 
         } catch (error) {
             console.error('Erro ao gerar música:', error);
@@ -186,7 +278,7 @@ class VozStudio {
         }
 
         try {
-            const duration = this.analiseVozAtual?.duracao || 5;
+            const duration = Math.min(this.analiseVozAtual?.duracao || 5, 10);
             const audioUrl = await generateTestTone(duration, 440);
             
             // Download
@@ -194,6 +286,9 @@ class VozStudio {
             a.href = audioUrl;
             a.download = `vozstudio-${Date.now()}.mp3`;
             a.click();
+
+            // Limpar URL depois de usar
+            setTimeout(() => URL.revokeObjectURL(audioUrl), 1000);
 
         } catch (error) {
             console.error('Erro ao exportar MP3:', error);
@@ -208,7 +303,7 @@ class VozStudio {
         }
 
         try {
-            const duration = this.analiseVozAtual?.duracao || 5;
+            const duration = Math.min(this.analiseVozAtual?.duracao || 5, 10);
             const audioUrl = await generateTestTone(duration, 440);
             
             // Download
@@ -216,6 +311,9 @@ class VozStudio {
             a.href = audioUrl;
             a.download = `vozstudio-${Date.now()}.wav`;
             a.click();
+
+            // Limpar URL depois de usar
+            setTimeout(() => URL.revokeObjectURL(audioUrl), 1000);
 
         } catch (error) {
             console.error('Erro ao exportar WAV:', error);
@@ -320,7 +418,7 @@ function writeString(view, offset, string) {
 }
 
 /**
- * Função para gerar um tom de teste
+ * Função para gerar um tom de teste (agora sem loops infinitos)
  */
 async function generateTestTone(duration = 2, frequency = 440) {
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -332,10 +430,11 @@ async function generateTestTone(duration = 2, frequency = 440) {
         const t = i / sampleRate;
         // Tom senoidal com fade out
         channelData[i] = Math.sin(i * frequency * 2 * Math.PI / sampleRate) * 
-                        (1 - t / duration);
+                        Math.max(0, 1 - t / duration);
     }
     
     const wavBlob = await bufferToWave(buffer, duration * 1000);
+    audioContext.close(); // Fechar contexto para não gastar bateria
     return URL.createObjectURL(wavBlob);
 }
 
