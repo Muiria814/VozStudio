@@ -1,8 +1,0 @@
-/**
- * Minified by jsDelivr using Terser v5.39.0.
- * Original file: /npm/tone@15.1.22/build/esm/index.js
- *
- * Do NOT use SRI with dynamically generated files! More information: https://www.jsdelivr.com/using-sri-with-dynamic-files
- */
-export{getContext,setContext}from"./core/Global.js";export*from"./classes.js";export*from"./version.js";import{getContext}from"./core/Global.js";import{ToneAudioBuffer}from"./core/context/ToneAudioBuffer.js";export{start}from"./core/Global.js";export{supported}from"./core/context/AudioContext.js";export function now(){return getContext().now()}export function immediate(){return getContext().immediate()}export const Transport=getContext().transport;export function getTransport(){return getContext().transport}export const Destination=getContext().destination;export const Master=getContext().destination;export function getDestination(){return getContext().destination}export const Listener=getContext().listener;export function getListener(){return getContext().listener}export const Draw=getContext().draw;export function getDraw(){return getContext().draw}export const context=getContext();export function loaded(){return ToneAudioBuffer.loaded()}import{ToneAudioBuffers}from"./core/context/ToneAudioBuffers.js";import{ToneBufferSource}from"./source/buffer/ToneBufferSource.js";export const Buffer=ToneAudioBuffer;export const Buffers=ToneAudioBuffers;export const BufferSource=ToneBufferSource;
-//# sourceMappingURL=/sm/c48ca3973125341edb96ec68d9c385b7e50e43fcb17881e3ea7b820fdfba028c.map
