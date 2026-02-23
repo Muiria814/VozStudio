@@ -650,45 +650,219 @@ class GeradorMusical {
     }
 
     criarSequencias(instrumentos, acordes, melodia, config) {
-        if (instrumentos[0]) {
-            const parteAcordes = new Tone.Part((time, acorde) => {
-                if (instrumentos[0].triggerAttackRelease) {
-                    instrumentos[0].triggerAttackRelease(acorde + '3', '2n', time);
-                }
-            }, acordes.map((acorde, i) => [i * 2, acorde]));
-            
-            parteAcordes.loop = true;
-            parteAcordes.loopEnd = '8m';
-            parteAcordes.start(0);
-        }
+    console.log('🎵 Criando sequências baseadas na melodia da voz...');
+    console.log('🎵 Melodia tem', melodia.length, 'notas');
+    
+    // Mapa de instrumentos para fácil acesso
+    const instMap = {};
+    
+    // Identificar cada instrumento
+    for (let i = 0; i < instrumentos.length; i++) {
+        const inst = instrumentos[i];
         
-        if (instrumentos[1]) {
-            const notasBaixo = acordes.map(acorde => {
-                const notaBase = acorde.replace(/[^A-G#]/g, '');
-                return notaBase + '2';
-            });
-            
-            const parteBaixo = new Tone.Part((time, nota) => {
-                if (instrumentos[1].triggerAttackRelease) {
-                    instrumentos[1].triggerAttackRelease(nota, '4n', time);
-                }
-            }, notasBaixo.map((nota, i) => [i * 2, nota]));
-            
-            parteBaixo.loop = true;
-            parteBaixo.loopEnd = '8m';
-            parteBaixo.start(0);
+        if (inst instanceof Tone.Player) {
+            instMap.voz = inst;
+            console.log('🎤 Voz encontrada');
         }
+        else if (inst.sampler || inst.sintetizador) {
+            instMap.bateria = inst;
+            console.log('🥁 Bateria encontrada');
+        }
+        else if (inst instanceof Tone.MembraneSynth) {
+            instMap.baixo = inst;
+            console.log('🎸 Baixo encontrado');
+        }
+        else if (inst instanceof Tone.Sampler || inst instanceof Tone.Synth) {
+            // Atribuir instrumentos disponíveis
+            if (!instMap.piano) {
+                instMap.piano = inst;
+                console.log('🎹 Piano encontrado');
+            } else if (!instMap.guitarra && config.guitarra) {
+                instMap.guitarra = inst;
+                console.log('🎸 Guitarra encontrada');
+            } else if (!instMap.cordas && config.cordas) {
+                instMap.cordas = inst;
+                console.log('🎻 Cordas encontradas');
+            } else if (!instMap.metal && config.metal) {
+                instMap.metal = inst;
+                console.log('🎺 Metais encontrados');
+            }
+        }
+    }
+    
+    // ===========================================
+    // 1. MELODIA PRINCIPAL (baseada na voz)
+    //    Toca as notas exatas que foram cantadas
+    // ===========================================
+    if (melodia.length > 0) {
+        // Instrumento principal para a melodia (piano por padrão)
+        const instMelodia = instMap.piano || instMap.guitarra || instMap.cordas;
         
-        if (melodia.length > 0 && instrumentos[0]) {
+        if (instMelodia) {
+            console.log('🎵 Criando melodia principal com', melodia.length, 'notas');
+            
+            // Tocar a melodia exata extraída da voz
             const parteMelodia = new Tone.Part((time, nota) => {
-                if (instrumentos[0].triggerAttackRelease) {
-                    instrumentos[0].triggerAttackRelease(nota.nota, nota.duracao, time);
-                }
+                instMelodia.triggerAttackRelease(nota.nota, nota.duracao, time);
             }, melodia);
             
             parteMelodia.start(0);
         }
     }
+    
+    // ===========================================
+    // 2. HARMONIA (acompanhamento baseado na melodia)
+    //    Piano, guitarra, cordas tocam variações
+    // ===========================================
+    if (melodia.length > 0) {
+        // Criar harmonia a partir da melodia
+        const notasHarmonia = [];
+        
+        // Pegar uma nota a cada 2 da melodia (simplificar)
+        for (let i = 0; i < melodia.length; i += 2) {
+            const notaMelodia = melodia[i];
+            
+            // Extrair a nota base (sem oitava)
+            const notaBase = notaMelodia.nota.replace(/[0-9]/g, '');
+            
+            // Adicionar acorde baseado na nota (simplificado)
+            notasHarmonia.push({
+                nota: notaBase + '3', // Oitava mais grave
+                tempo: notaMelodia.tempo,
+                duracao: 0.5 // Mais longo
+            });
+            
+            // Adicionar quinta para encorpar
+            notasHarmonia.push({
+                nota: this.getQuinta(notaBase) + '3',
+                tempo: notaMelodia.tempo + 0.1,
+                duracao: 0.5
+            });
+        }
+        
+        // Tocar harmonia no piano/guitarra
+        const instHarmonia = [instMap.piano, instMap.guitarra, instMap.cordas, instMap.metal]
+            .filter(i => i);
+        
+        instHarmonia.forEach((inst, idx) => {
+            const offset = idx * 0.05; // Pequeno delay entre instrumentos
+            
+            const parteHarmonia = new Tone.Part((time, nota) => {
+                let notaFinal = nota.nota;
+                
+                // Variações para cada instrumento
+                if (inst === instMap.cordas) {
+                    // Cordas tocam mais agudo
+                    notaFinal = nota.nota.replace('3', '5');
+                } else if (inst === instMap.metal) {
+                    // Metais tocam com mais energia
+                    notaFinal = nota.nota.replace('3', '4');
+                }
+                
+                inst.triggerAttackRelease(notaFinal, nota.duracao, time + offset);
+            }, notasHarmonia);
+            
+            parteHarmonia.start(0);
+        });
+        
+        console.log('✅ Harmonia criada com', notasHarmonia.length, 'notas');
+    }
+    
+    // ===========================================
+    // 3. BAIXO (segue a melodia)
+    // ===========================================
+    if (instMap.baixo && melodia.length > 0) {
+        const notasBaixo = [];
+        
+        // Pegar notas principais da melodia em oitava grave
+        for (let i = 0; i < melodia.length; i += 3) {
+            const notaMelodia = melodia[i];
+            const notaBase = notaMelodia.nota.replace(/[0-9]/g, '');
+            
+            notasBaixo.push({
+                nota: notaBase + '1', // Oitava mais grave
+                tempo: notaMelodia.tempo,
+                duracao: 0.3
+            });
+        }
+        
+        const parteBaixo = new Tone.Part((time, nota) => {
+            instMap.baixo.triggerAttackRelease(nota.nota, nota.duracao, time);
+        }, notasBaixo);
+        
+        parteBaixo.start(0);
+        console.log('✅ Baixo criado com', notasBaixo.length, 'notas');
+    }
+    
+    // ===========================================
+    // 4. BATERIA (ritmo baseado na intensidade da voz)
+    // ===========================================
+    if (instMap.bateria && melodia.length > 0) {
+        // Analisar intensidade das notas para criar ritmo
+        const padraoBateria = [];
+        
+        for (let i = 0; i < melodia.length; i++) {
+            const nota = melodia[i];
+            const tempo = nota.tempo;
+            
+            // Kick nos tempos fortes
+            if (i % 4 === 0) {
+                padraoBateria.push({ tempo, tipo: 'kick' });
+            }
+            
+            // Snare nos contratempos
+            if (i % 2 === 1) {
+                padraoBateria.push({ tempo: tempo + 0.1, tipo: 'snare' });
+            }
+            
+            // Hi-hat em quase todas as notas
+            if (i % 1 === 0) {
+                padraoBateria.push({ tempo: tempo + 0.05, tipo: 'hat' });
+            }
+        }
+        
+        // Tocar bateria
+        padraoBateria.forEach(nota => {
+            Tone.Transport.schedule((time) => {
+                if (instMap.bateria.sampler) {
+                    if (nota.tipo === 'kick') instMap.bateria.sampler.triggerAttackRelease('kick', '16n', time);
+                    else if (nota.tipo === 'snare') instMap.bateria.sampler.triggerAttackRelease('snare', '16n', time);
+                    else if (nota.tipo === 'hat') instMap.bateria.sampler.triggerAttackRelease('hihat', '16n', time);
+                } else if (instMap.bateria.sintetizador) {
+                    if (nota.tipo === 'kick') {
+                        instMap.bateria.sintetizador.triggerAttackRelease('C2', '16n', time);
+                    } else if (nota.tipo === 'snare') {
+                        instMap.bateria.sintetizador.triggerAttackRelease('E2', '16n', time);
+                    } else {
+                        instMap.bateria.sintetizador.triggerAttackRelease('G2', '32n', time);
+                    }
+                }
+            }, nota.tempo);
+        });
+        
+        console.log('✅ Bateria criada com', padraoBateria.length, 'golpes');
+    }
+    
+    // ===========================================
+    // 5. VOZ (a gravação original)
+    // ===========================================
+    if (instMap.voz) {
+        Tone.Transport.schedule((time) => {
+            instMap.voz.start(time);
+            console.log('🎤 Voz iniciada em', time);
+        }, 0);
+    }
+    
+    console.log('✅ Todas as sequências criadas com sucesso!');
+}
+
+// Método auxiliar para obter a quinta de uma nota
+getQuinta(nota) {
+    const notas = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const index = notas.indexOf(nota);
+    const quintaIndex = (index + 7) % 12; // Intervalo de quinta
+    return notas[quintaIndex];
+}
 
     limparTudo() {
         Tone.Transport.stop();
