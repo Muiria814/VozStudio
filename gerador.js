@@ -398,6 +398,11 @@ class GeradorMusical {
 }
 
     gerarAcordes(estilo, tom, analiseVoz) {
+    console.log('🎵 Gerando acordes baseados na melodia da voz...');
+    
+    // Se não tiver melodia, usar progressão padrão
+    if (!analiseVoz.notas || analiseVoz.notas.length === 0) {
+        console.log('⚠️ Sem notas detetadas, usando progressão padrão');
         const progressoes = {
             pop: ['C', 'G', 'Am', 'F'],
             rap: ['Dm', 'Am', 'C', 'G'],
@@ -407,13 +412,108 @@ class GeradorMusical {
             gospel: ['C', 'F', 'G', 'Am'],
             acustico: ['C', 'Am', 'F', 'G']
         };
-
         const acordesBase = progressoes[estilo] || progressoes.pop;
-        
-        return acordesBase.map(acorde => 
-            this.transporAcorde(acorde, tom)
-        );
+        return acordesBase.map(acorde => this.transporAcorde(acorde, tom));
     }
+    
+    // Extrair notas principais da voz
+    const notasVoz = analiseVoz.notas.map(n => n.frequencia);
+    
+    // Converter frequências para notas musicais
+    const notasMusicais = notasVoz.map(f => {
+        const nota = this.frequenciaParaNota(f);
+        return nota ? nota.replace(/[0-9]/g, '') : null; // Remove oitava
+    }).filter(n => n);
+    
+    // Se não conseguiu extrair notas, usar progressão padrão
+    if (notasMusicais.length === 0) {
+        console.log('⚠️ Não foi possível extrair notas, usando progressão padrão');
+        const progressoes = {
+            pop: ['C', 'G', 'Am', 'F'],
+            rap: ['Dm', 'Am', 'C', 'G'],
+            kizomba: ['Em', 'C', 'G', 'D'],
+            semba: ['C', 'F', 'G', 'C'],
+            afrobeat: ['D', 'G', 'A', 'D'],
+            gospel: ['C', 'F', 'G', 'Am'],
+            acustico: ['C', 'Am', 'F', 'G']
+        };
+        const acordesBase = progressoes[estilo] || progressoes.pop;
+        return acordesBase.map(acorde => this.transporAcorde(acorde, tom));
+    }
+    
+    // Encontrar a nota mais frequente (tónica)
+    const frequenciaNotas = {};
+    notasMusicais.forEach(n => {
+        frequenciaNotas[n] = (frequenciaNotas[n] || 0) + 1;
+    });
+    
+    let tonica = notasMusicais[0];
+    let maxFreq = 0;
+    for (const [nota, freq] of Object.entries(frequenciaNotas)) {
+        if (freq > maxFreq) {
+            maxFreq = freq;
+            tonica = nota;
+        }
+    }
+    
+    console.log(`🎵 Tónica detetada: ${tonica}`);
+    
+    // Gerar acordes baseados na tónica e estilo
+    const acordesGerados = [];
+    const duracao = analiseVoz.duracao || 30;
+    const numAcordes = Math.max(4, Math.floor(duracao / 4)); // Um acorde a cada ~4 segundos
+    
+    // Progressões comuns baseadas na tónica
+    const progressoesPorTonica = {
+        'C': ['C', 'G', 'Am', 'F', 'C'],
+        'D': ['D', 'A', 'Bm', 'G', 'D'],
+        'E': ['E', 'B', 'C#m', 'A', 'E'],
+        'F': ['F', 'C', 'Dm', 'Bb', 'F'],
+        'G': ['G', 'D', 'Em', 'C', 'G'],
+        'A': ['A', 'E', 'F#m', 'D', 'A'],
+        'B': ['B', 'F#', 'G#m', 'E', 'B'],
+        'C#': ['C#', 'G#', 'A#m', 'F#', 'C#'],
+        'D#': ['D#', 'A#', 'Cm', 'G#', 'D#'],
+        'F#': ['F#', 'C#', 'D#m', 'B', 'F#'],
+        'G#': ['G#', 'D#', 'Fm', 'C#', 'G#'],
+        'A#': ['A#', 'F', 'Gm', 'D#', 'A#'],
+        'Db': ['Db', 'Ab', 'Bbm', 'Gb', 'Db'],
+        'Eb': ['Eb', 'Bb', 'Cm', 'Ab', 'Eb'],
+        'Gb': ['Gb', 'Db', 'Ebm', 'B', 'Gb'],
+        'Ab': ['Ab', 'Eb', 'Fm', 'C#', 'Ab'],
+        'Bb': ['Bb', 'F', 'Gm', 'Eb', 'Bb']
+    };
+    
+    // Escolher progressão baseada na tónica ou usar padrão
+    let progressao = progressoesPorTonica[tonica] || ['C', 'G', 'Am', 'F'];
+    
+    // Adaptar ao estilo
+    if (estilo === 'rap' || estilo === 'trap') {
+        progressao = [tonica, 'Dm', 'Am', 'G'];
+    } else if (estilo === 'kizomba') {
+        progressao = [tonica, 'C', 'G', 'D'];
+    } else if (estilo === 'semba') {
+        progressao = [tonica, 'F', 'G', tonica];
+    } else if (estilo === 'gospel') {
+        progressao = [tonica, 'F', 'G', 'Am'];
+    }
+    
+    // Gerar sequência de acordes
+    for (let i = 0; i < numAcordes; i++) {
+        const indice = i % progressao.length;
+        let acorde = progressao[indice];
+        
+        // Transpor para o tom escolhido pelo utilizador
+        if (tom !== 'C') {
+            acorde = this.transporAcorde(acorde, tom);
+        }
+        
+        acordesGerados.push(acorde);
+    }
+    
+    console.log('✅ Acordes gerados:', acordesGerados);
+    return acordesGerados;
+            }
 
     transporAcorde(acorde, novoTom) {
         const notas = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -462,6 +562,12 @@ class GeradorMusical {
                 });
             }
         }
+
+        // No final de adaptarMelodia, depois de criar a melodia
+if (melodia.length > 0 && !analiseVoz.notas) {
+    // Guardar as notas extraídas para uso nos acordes
+    analiseVoz.notas = notasCantadas;
+}
         
         if (melodia.length === 0) {
             return this.gerarMelodiaGenerica(acordes, analiseVoz.duracao || 30);
